@@ -1,5 +1,5 @@
-## Braille Vison
-Facial Recognition System using Python
+## Braille Vision
+Braille Recognition System using Python
 
 ## Team Members
 1. Mandeep Baliyan
