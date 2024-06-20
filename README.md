@@ -1,7 +1,7 @@
-## Braille Vision
-Braille Recognition System using Python
+## Braille Vison
+Text to Braille conversion using Deep Learning [CNN]
 
-## Team Members
+## Team Members [Group - 1]
 1. Mandeep Baliyan
 2. Aniket Kapildev Tiwari
 3. Paras Rupani
@@ -10,7 +10,13 @@ Braille Recognition System using Python
 ### Requirement
 - Python 3.*
 - PIP3
+- Pandas
 - Pillow
+- Torch
+- Torchvision
+- Numpy
+- Jupyter
+- Flask
 
 ### Installation of Project
 
@@ -23,8 +29,15 @@ $ git clone https://github.com/ParasRupani/Braille-Vision
 $ cd Braille-Vision
 ```
 
-## Run Face Recognition
+## Run Braille Vision Notebok
 ```sh
 $ pip3 install -r requrements.txt
 $ jupyter notebook
+```
+
+## Run Braille Vision Application
+```sh
+$ cd app
+$ pip3 install -r requrements.txt
+$ python3 ./app.py
 ```
