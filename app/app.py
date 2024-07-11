@@ -28,14 +28,17 @@ def index():
 @app.route('/api/analyze_text_structure', methods=['POST'])
 def analyze_text_structure():
     data = request.json
-    text = data['text']
+    text = data.get('text', '')
     language = data.get('language', 'English')
+    paragraphs = text.count('\n') + 1
+    sentences = text.count('.') + text.count('!') + text.count('?')
+    words = len(text.split())
     response = {
         "status": "success",
         "text_structure": {
-            "paragraphs": 3,
-            "sentences": 15,
-            "words": 200,
+            "paragraphs": paragraphs,
+            "sentences": sentences,
+            "words": words,
             "language": language
         }
     }
@@ -44,7 +47,7 @@ def analyze_text_structure():
 @app.route('/api/convert_to_braille', methods=['POST'])
 def convert_to_braille():
     data = request.json
-    text = data['text']
+    text = data.get('text', '')
     braille_image = text_to_braille_image(text, braille_image_folder)
     img_byte_arr = io.BytesIO()
     braille_image.save(img_byte_arr, format='PNG')
@@ -84,8 +87,8 @@ def convert_braille_to_text():
 @app.route('/api/provide_feedback', methods=['POST'])
 def provide_feedback():
     data = request.json
-    braille_text = data['braille_text']
-    corrections = data['corrections']
+    braille_text = data.get('braille_text', '')
+    corrections = data.get('corrections', [])
     response = {
         "status": "success",
         "message": "Feedback submitted"
@@ -94,7 +97,7 @@ def provide_feedback():
 
 @app.route('/api/conversion_history', methods=['GET'])
 def conversion_history():
-    user_id = request.args.get('user_id')
+    user_id = request.args.get('user_id', '')
     history = [
         {
             "text": "Example text",
