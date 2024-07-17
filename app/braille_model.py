@@ -32,7 +32,7 @@ class BrailleDataset(Dataset):
 
 # Transforms for image preprocessing
 transform = transforms.Compose([
-    transforms.Resize((70, 950)),
+    transforms.Resize((70, 1000)),
     transforms.ToTensor(),
     transforms.Normalize((0.5,), (0.5,))
 ])
@@ -71,7 +71,7 @@ def load_model(model_path, num_classes, max_label_length):
     return model
 
 def text_to_braille_image(text, braille_image_folder):
-    max_length = 19
+    max_length = 20
     char_height = 70
     char_width = 50
     total_width = min(len(text), max_length) * char_width
@@ -80,7 +80,7 @@ def text_to_braille_image(text, braille_image_folder):
 
     for i, char in enumerate(text[:max_length]):
         if char == ' ':
-            char = ' '
+            char = 'space'
         char_image_path = os.path.join(braille_image_folder, f"{char}.png")
         if os.path.exists(char_image_path):
             char_image = Image.open(char_image_path).convert('RGB')
@@ -89,3 +89,21 @@ def text_to_braille_image(text, braille_image_folder):
             print(f"Warning: Image for character '{char}' not found.")
 
     return combined_image
+
+def process_image(filename, new_filename, braille_image_folder):
+    image = Image.open(filename).convert('RGB')
+
+    # Check if the width is less than 1000px and add space.png if necessary
+    if image.width < 1000:
+        space_img = Image.open(os.path.join(braille_image_folder, 'space.png')).convert('RGB')
+        new_image = Image.new('RGB', (1000, image.height), (255, 255, 255))
+        new_image.paste(image, (0, 0))
+
+        current_width = image.width
+        while current_width < 1000:
+            new_image.paste(space_img, (current_width, 0))
+            current_width += space_img.width
+
+        new_image.save(new_filename)
+    else:
+        image.save(new_filename)
