@@ -2,8 +2,22 @@ from flask import Flask, request, jsonify, send_file, render_template, url_for
 from braille_model import load_model, text_to_braille_image, process_image, transform
 import io
 import torch
-import os
+import os, logging
 from PIL import Image
+
+# Configure logging to output to console and file
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Path to the log file
+log_file_path = './braille_log/braille_log.log'
+
+# Ensure the directory exists
+os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+
+# Create the file if it doesn't exist
+if not os.path.exists(log_file_path):
+    with open(log_file_path, 'w') as file:
+        file.write('')
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 model_path = './braille_cnn.pth'
@@ -48,11 +62,17 @@ def analyze_text_structure():
 def convert_to_braille():
     data = request.json
     text = data.get('text', '')
-    braille_image = text_to_braille_image(text, braille_image_folder)
-    img_byte_arr = io.BytesIO()
-    braille_image.save(img_byte_arr, format='PNG')
-    img_byte_arr.seek(0)
-    return send_file(img_byte_arr, mimetype='image/png')
+    logging.debug(f"Received text to convert to braille: {text}")
+    try:
+        braille_image = text_to_braille_image(text, braille_image_folder)
+        img_byte_arr = io.BytesIO()
+        braille_image.save(img_byte_arr, format='PNG')
+        img_byte_arr.seek(0)
+        logging.debug("Braille image created successfully")
+        return send_file(img_byte_arr, mimetype='image/png')
+    except Exception as e:
+        logging.error(f"Error converting text to braille: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/convert_braille_to_text', methods=['POST'])
 def convert_braille_to_text():
@@ -60,9 +80,11 @@ def convert_braille_to_text():
         file = request.files['file']
         filename = os.path.join(uploads_folder, file.filename)
         file.save(filename)
+        logging.debug(f"File saved to {filename}")
 
         new_filename = os.path.join(uploads_folder, 'braille_new.png')
         process_image(filename, new_filename, braille_image_folder)
+        logging.debug(f"Processed image saved to {new_filename}")
 
         image = transform(Image.open(new_filename).convert('RGB')).unsqueeze(0).to(device)
         with torch.no_grad():
@@ -71,13 +93,14 @@ def convert_braille_to_text():
             predicted = predicted.squeeze(0).tolist()
             converted_text = decode_predictions(predicted)
         
-        print(f"Predicted Output: {converted_text}")  # Added print statement
-        
+        logging.debug(f"Predicted text: {converted_text}")
+
         response = {
             "status": "success",
             "text": converted_text
         }
     except Exception as e:
+        logging.error(f"Error converting braille to text: {e}")
         response = {
             "status": "error",
             "error": str(e)
