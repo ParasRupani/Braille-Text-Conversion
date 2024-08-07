@@ -11,12 +11,13 @@ WORKDIR /app
 RUN pip install -r requirements.txt
 
 # This tells Docker to listen on port 80 at runtime.
-EXPOSE 80
+ENV PORT 80
+EXPOSE {$PORT}
 
 # Define environment variables for Flask app
 ENV FLASK_APP=app.py
 ENV FLASK_RUN_HOST=0.0.0.0
-ENV FLASK_RUN_PORT=80
+ENV FLASK_RUN_PORT={$PORT}
 
 # Run flask when the container launches
 CMD ["flask", "run"]

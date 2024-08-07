@@ -4,9 +4,19 @@ import io
 import torch
 import os, logging
 from PIL import Image
+from dotenv import load_dotenv
 
-# Path to the log file
-log_file_path = './braille_log/braille_log.log'
+# Load environment variables from .env file
+load_dotenv()
+
+# Get environment variables
+log_file_path = os.getenv('LOG_FILE_PATH')
+model_path = os.getenv('MODEL_PATH')
+braille_image_folder = os.getenv('BRAILLE_IMAGE_FOLDER')
+uploads_folder = os.getenv('UPLOADS_FOLDER')
+num_classes = int(os.getenv('NUM_CLASSES', 27))  # Default to 27 if not set
+max_label_length = int(os.getenv('MAX_LABEL_LENGTH', 20))  # Default to 20 if not set
+device = torch.device(os.getenv('DEVICE', 'cpu'))  # Default to 'cpu' if not set
 
 # Ensure the directory exists
 os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
@@ -25,13 +35,6 @@ logging.basicConfig(level=logging.INFO,
                     ])
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
-model_path = './braille_cnn.pth'
-braille_image_folder = './static/braille_char'
-uploads_folder = './uploads'
-num_classes = 27  # 26 letters + space
-max_label_length = 20  # Updated to 20
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = load_model(model_path, num_classes, max_label_length).to(device)
 
 def decode_predictions(predictions):
@@ -77,7 +80,7 @@ def convert_to_braille():
         return send_file(img_byte_arr, mimetype='image/png')
     except Exception as e:
         logging.error(f"Error converting text to braille: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({"status": "error", "message": str(e)})
 
 @app.route('/api/convert_braille_to_text', methods=['POST'])
 def convert_braille_to_text():
@@ -159,4 +162,4 @@ def conversion_status(conversion_id):
 
 if __name__ == '__main__':
     os.makedirs(uploads_folder, exist_ok=True)
-    app.run(debug=True)
+    app.run(debug=True, port=os.getenv('PORT'))
