@@ -3,12 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Braille Text Converter</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>Braille Converter</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+        }
         .tabs {
             display: flex;
             cursor: pointer;
+            margin-bottom: 20px;
         }
         .tab {
             padding: 10px 20px;
@@ -31,6 +39,17 @@
         .tab-content.active {
             display: block;
         }
+        .image-item {
+            display: inline-block;
+            text-align: center;
+            margin: 10px;
+        }
+        .char-image {
+            display: block;
+            width: 50px;
+            height: 70px;
+            cursor: pointer;
+        }
         .input-container {
             display: flex;
             align-items: center;
@@ -38,51 +57,103 @@
         }
         .input-container textarea {
             flex-grow: 1;
+            resize: none;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            text-align: center;
+        }
+        #predictedBrailleOutput {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px; /* Adjust spacing between characters */
+        }
+        #predictedTextOutput {
+            margin-top: 10px;
+            font-size: 18px;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Braille Text Converter</h1>
+        <h1>Braille Converter</h1>
         <div class="tabs">
-            <div class="tab active" id="brailleConverterTab" onclick="showTab('brailleConverter')">Braille Converter</div>
-            <div class="tab" id="textInputTab" onclick="showTab('textInput')">Text Input</div>
+            <div class="tab active" id="text2brailleTab" onclick="showTab('text2braille')">Text to Braille</div>
+            <div class="tab" id="braille2textTab" onclick="showTab('braille2text')">Braille to Text</div>
         </div>
-        <div id="brailleConverter" class="tab-content active">
+
+        <!-- Text to Braille Tab -->
+        <div id="text2braille" class="tab-content active">
+            <h2>Select Text Characters to Convert to Braille</h2>
+            <div id="text-images">
+                {% for char in "abcdefghijklmnopqrstuvwxyz " %}
+                {% set filename = 'space' if char == ' ' else char %}
+                <div class="image-item">
+                    <img src="{{ url_for('static', filename='eng_char/' + filename + '.png') }}" alt="{{ char }}" class="char-image" onclick="addToImage('{{ char }}', 'text')">
+                    <p>{{ 'space' if char == ' ' else char }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            <hr>
+            <div id="newTextImage">
+                <h2 id="textOutputTitle">New Braille Image:</h2>
+                <canvas id="textCanvas" style="display: none;"></canvas>
+                <img id="generatedTextImage" src="" alt="Generated Braille Image" style="display: none;">
+            </div>
+            <button type="button" onclick="convertToBraille()">Convert to Braille</button>
+            <div id="brailleResult" class="result" style="display:none;">
+                <h3>Predicted Braille Characters:</h3>
+                <div id="predictedBrailleOutput"></div>
+                <p id="predictedTextOutput"></p>
+            </div>
+        </div>
+
+        <!-- Braille to Text Tab -->
+        <div id="braille2text" class="tab-content">
+            <h2>Select Braille Characters to Convert to Text</h2>
             <div id="braille-images">
                 {% for char in "abcdefghijklmnopqrstuvwxyz " %}
                 {% set filename = 'space' if char == ' ' else char %}
-                <div class="braille-item">
-                    <img src="{{ url_for('static', filename='braille_char/' ~ filename ~ '.png') }}" alt="{{ char }}" class="braille-char" onclick="addToImage('{{ char }}')">
+                <div class="image-item">
+                    <img src="{{ url_for('static', filename='braille_char/' + filename + '.png') }}" alt="{{ char }}" class="char-image" onclick="addToImage('{{ char }}', 'braille')">
                     <p>{{ 'space' if char == ' ' else char }}</p>
                 </div>
                 {% endfor %}
             </div>
             <hr>
             <div id="newBrailleImage">
-                <h2 id="outputTitle">New Braille Image:</h2>
+                <h2 id="brailleOutputTitle">New Text Image:</h2>
                 <canvas id="brailleCanvas" style="display: none;"></canvas>
-                <img id="generatedBrailleImage" src="{{ url_for('static', filename='braille_char/space.png') }}" alt="Generated Braille Image">
+                <img id="generatedBrailleImage" src="" alt="Generated Text Image" style="display: none;">
             </div>
-            <button type="button" onclick="convertBrailleToText()">Convert Braille to Text</button>
-            <div id="brailleToTextResult">
-                <h2>Text Output:</h2>
-                <p id="textOutput"></p>
-            </div>
-        </div>
-        <div id="textInput" class="tab-content">
-            <h2>Enter Text</h2>
-            <div class="input-container">
-                <textarea id="textInputBox" rows="4" cols="50" maxlength="20" placeholder="Enter your text here..."></textarea>
-                <button type="button" onclick="convertTextToBraille()">Convert Text to Braille</button>
-            </div>
-            <div id="textToBrailleResult">
-                <h2>Braille Output:</h2>
-                <img id="textToBrailleImage" src="{{ url_for('static', filename='braille_char/space.png') }}" alt="Braille Image">
+            <button type="button" onclick="convertBrailleToText()">Convert to Text</button>
+            <div id="brailleToTextResult" class="result">
+                <h3>Converted Text:</h3>
+                <p id="convertedTextOutput"></p>
             </div>
         </div>
     </div>
+
     <script>
+        let textChars = [];
         let brailleChars = [];
 
         function showTab(tabId) {
@@ -92,38 +163,85 @@
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
-            document.querySelector(`#${tabId}Tab`).classList.add('active');
+            document.getElementById(`${tabId}Tab`).classList.add('active');
             document.getElementById(tabId).classList.add('active');
         }
 
-        function addToImage(char) {
-            brailleChars.push(char);
-            if (brailleChars.length > 20) brailleChars = brailleChars.slice(0, 20);
-            drawImage();
+        function addToImage(char, type = 'text') {
+            if (type === 'text') {
+                textChars.push(char);
+                if (textChars.length > 20) textChars = textChars.slice(0, 20);
+                drawImage('text');
+            } else {
+                brailleChars.push(char);
+                if (brailleChars.length > 20) brailleChars = brailleChars.slice(0, 20);
+                drawImage('braille');
+            }
         }
 
-        function drawImage() {
-            const canvas = document.getElementById('brailleCanvas');
+        function drawImage(type = 'text') {
+            const canvas = document.getElementById(type === 'text' ? 'textCanvas' : 'brailleCanvas');
             const context = canvas.getContext('2d');
             const charHeight = 70;
             const charWidth = 50;
-            canvas.width = charWidth * brailleChars.length;
+            const chars = type === 'text' ? textChars : brailleChars;
+            canvas.width = charWidth * chars.length;
             canvas.height = charHeight;
             context.fillStyle = 'white';
             context.fillRect(0, 0, canvas.width, canvas.height);
 
-            brailleChars.forEach((char, index) => {
+            chars.forEach((char, index) => {
                 const img = new Image();
-                img.src = `{{ url_for('static', filename='braille_char') }}/${char === ' ' ? 'space' : char}.png`;
+                img.src = `${type === 'text' ? '/static/eng_char/' : '/static/braille_char/'}${char === ' ' ? 'space' : char}.png`;
                 img.onload = function () {
                     context.drawImage(img, index * charWidth, 0, charWidth, charHeight);
-                    if (index === brailleChars.length - 1) {
-                        const generatedImage = document.getElementById('generatedBrailleImage');
+                    if (index === chars.length - 1) {
+                        const generatedImage = document.getElementById(type === 'text' ? 'generatedTextImage' : 'generatedBrailleImage');
                         generatedImage.src = canvas.toDataURL('image/png');
                         generatedImage.style.display = 'block';
                     }
                 };
             });
+        }
+
+        async function convertToBraille() {
+            const canvas = document.getElementById('textCanvas');
+            const dataURL = canvas.toDataURL('image/png');
+            const blob = await (await fetch(dataURL)).blob();
+            const formData = new FormData();
+            formData.append('file', blob, 'text.png');
+
+            try {
+                const response = await fetch('/api/convert_to_braille', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    displayPredictedBraille(result.text);
+                } else {
+                    alert(`Error: ${result.error}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        function displayPredictedBraille(predictedText) {
+            const outputDiv = document.getElementById('predictedBrailleOutput');
+            const textOutput = document.getElementById('predictedTextOutput');
+            outputDiv.innerHTML = ''; // Clear previous content
+            textOutput.textContent = predictedText; // Display predicted text
+
+            predictedText.split('').forEach(char => {
+                const img = document.createElement('img');
+                img.src = `/static/braille_char/${char === ' ' ? 'space' : char}.png`;
+                img.classList.add('char-image');
+                outputDiv.appendChild(img);
+            });
+
+            document.getElementById('brailleResult').style.display = 'block';
         }
 
         async function convertBrailleToText() {
@@ -141,42 +259,17 @@
 
                 const result = await response.json();
                 if (result.status === 'success') {
-                    document.getElementById('outputTitle').innerText = `Text conversion of Images: ${result.text}`;
+                    document.getElementById('convertedTextOutput').textContent = result.text;
                 } else {
-                    document.getElementById('outputTitle').innerText = `Error: ${result.error}`;
+                    document.getElementById('convertedTextOutput').textContent = `Error: ${result.error}`;
                 }
             } catch (error) {
-                document.getElementById('outputTitle').innerText = `Error: ${error.message}`;
-            }
-        }
-
-        async function convertTextToBraille() {
-            const text = document.getElementById('textInputBox').value;
-            if (text.length > 20) {
-                alert('Text length must be 20 characters or less.');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/convert_to_braille', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ text: text })
-                });
-
-                const result = await response.blob();
-                const url = URL.createObjectURL(result);
-                document.getElementById('textToBrailleImage').src = url;
-                document.getElementById('textToBrailleResult').style.display = 'block';
-            } catch (error) {
-                document.getElementById('textToBrailleResult').innerText = `Error: ${error.message}`;
+                document.getElementById('convertedTextOutput').textContent = `Error: ${error.message}`;
             }
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            showTab('brailleConverter');
+            showTab('text2braille');
         });
     </script>
 </body>

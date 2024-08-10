@@ -72,19 +72,41 @@ def analyze_text_structure():
 @app.route('/api/convert_to_braille', methods=['POST'])
 def convert_to_braille():
     logging.info("API call: /api/convert_to_braille started.")
-    data = request.json
-    text = data.get('text', '')
-    logging.info(f"Received text to convert to braille: {text}")
     try:
-        braille_image = text_to_braille_image(text, braille_image_folder)
-        img_byte_arr = io.BytesIO()
-        braille_image.save(img_byte_arr, format='PNG')
-        img_byte_arr.seek(0)
-        logging.info("Braille image created successfully")
-        return send_file(img_byte_arr, mimetype='image/png')
+        file = request.files['file']
+        filename = os.path.join(uploads_folder, file.filename)
+        file.save(filename)
+        logging.info(f"File saved to {filename}")
+
+        new_filename = os.path.join(uploads_folder, 'english_braille_new.png')
+        process_image(filename, new_filename, braille_image_folder)  # Assuming similar preprocessing as `convert_braille_to_text`
+        logging.info(f"Processed image saved to {new_filename}")
+
+        # Load the English CNN model instead of Braille CNN model
+        english_model_path = os.path.join(os.path.dirname(__file__), 'english_cnn.pth')
+        english_model = load_model(english_model_path, num_classes, max_label_length).to(device)
+        english_pipeline = create_pipeline(english_model)
+
+        braille_dataset = BrailleDataset(img_paths=[new_filename], transform=transform)
+        data_loader = DataLoader(braille_dataset, batch_size=1, collate_fn=lambda x: x)
+
+        decoded_predictions = english_pipeline.fit_transform(data_loader)
+
+        logging.info(f"Predicted text: {decoded_predictions[0]}")
+
+        response = {
+            "status": "success",
+            "text": decoded_predictions[0]
+        }
     except Exception as e:
-        logging.error(f"Error converting text to braille: {e}")
-        return jsonify({"status": "error", "message": str(e)})
+        logging.error(f"Error converting English text to braille: {e}")
+        response = {
+            "status": "error",
+            "error": str(e)
+        }
+    logging.info("API call: /api/convert_to_braille completed.")
+    return jsonify(response)
+
 
 @app.route('/api/convert_braille_to_text', methods=['POST'])
 def convert_braille_to_text():
