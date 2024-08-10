@@ -11,7 +11,6 @@ WORKDIR /app
 RUN pip install -r requirements.txt
 
 # This tells Docker to listen on port 80 at runtime.
-ENV PORT 80
 EXPOSE 80
 
 # Define environment variables for Flask app

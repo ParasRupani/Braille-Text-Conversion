@@ -17,7 +17,8 @@ braille_image_folder = os.getenv('BRAILLE_IMAGE_FOLDER')
 uploads_folder = os.getenv('UPLOADS_FOLDER')
 num_classes = int(os.getenv('NUM_CLASSES', 27))  # Default to 27 if not set
 max_label_length = int(os.getenv('MAX_LABEL_LENGTH', 20))  # Default to 20 if not set
-device = torch.device(os.getenv('DEVICE', 'cpu'))  # Default to 'cpu' if not set
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 # Ensure the directory exists
 os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
