@@ -3,15 +3,16 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
+from dotenv import load_dotenv
 
 app = Flask(__name__)
 
 # Configuration for the email server
-EMAIL_HOST = 'smtp.your-email-provider.com'
-EMAIL_PORT = 587
-EMAIL_HOST_USER = 'your-email@example.com'
-EMAIL_HOST_PASSWORD = 'your-email-password'
-EMAIL_HISTORY_FILE = 'email.txt'
+EMAIL_HOST = os.getenv('EMAIL_HOST')
+EMAIL_PORT = os.getenv('EMAIL_PORT')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+EMAIL_HISTORY_FILE = os.getenv('EMAIL_HISTORY_FILE')
 
 @app.route('/')
 def index():
@@ -63,4 +64,4 @@ def save_email_to_history(recipient, subject, body):
         file.write(f"{recipient}|{subject}|{body}\n")
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5002)
+    app.run(debug=True, port=os.getenv('EMAIL_APP_PORT'))
