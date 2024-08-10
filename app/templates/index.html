@@ -62,7 +62,7 @@
             <div id="newBrailleImage">
                 <h2 id="outputTitle">New Braille Image:</h2>
                 <canvas id="brailleCanvas" style="display: none;"></canvas>
-                <img id="generatedBrailleImage" src="" alt="Generated Braille Image">
+                <img id="generatedBrailleImage" src="{{ url_for('static', filename='braille_char/space.png') }}" alt="Generated Braille Image">
             </div>
             <button type="button" onclick="convertBrailleToText()">Convert Braille to Text</button>
             <div id="brailleToTextResult">
@@ -78,7 +78,7 @@
             </div>
             <div id="textToBrailleResult">
                 <h2>Braille Output:</h2>
-                <img id="textToBrailleImage" src="" alt="Braille Image">
+                <img id="textToBrailleImage" src="{{ url_for('static', filename='braille_char/space.png') }}" alt="Braille Image">
             </div>
         </div>
     </div>
