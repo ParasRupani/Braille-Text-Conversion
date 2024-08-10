@@ -108,7 +108,7 @@
                 {% set filename = 'space' if char == ' ' else char %}
                 <div class="image-item">
                     <img src="{{ url_for('static', filename='eng_char/' + filename + '.png') }}" alt="{{ char }}" class="char-image" onclick="addToImage('{{ char }}', 'text')">
-                    <p>{{ 'space' if char == ' ' else char }}</p>
+                    <p>{{ 'space' if char == ' '}}</p>
                 </div>
                 {% endfor %}
             </div>
