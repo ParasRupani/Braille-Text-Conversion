@@ -3,9 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Braille Email Composer</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>Email Composer</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 80%;
+            margin: 50px auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
         .tabs {
             display: flex;
             cursor: pointer;
@@ -17,14 +30,16 @@
             border: none;
             border-radius: 5px 5px 0 0;
             margin-right: 5px;
+            text-align: center;
+            flex: 1;
         }
         .tab.active {
             background-color: #0056b3;
         }
         .tab-content {
             display: none;
-            background-color: white;
             padding: 20px;
+            background-color: white;
             border-radius: 0 5px 5px 5px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
@@ -42,6 +57,7 @@
             padding: 10px;
             border-radius: 5px;
             border: 1px solid #ccc;
+            font-size: 16px;
         }
         button {
             padding: 10px 20px;
@@ -50,49 +66,44 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            font-size: 16px;
         }
         button:hover {
             background-color: #0056b3;
         }
-        .email-item {
-            margin-bottom: 15px;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 10px;
-            cursor: pointer;
-        }
-        .email-item p {
-            margin: 0;
-        }
-        .email-subject, .email-body {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            width: 100%;
-            display: block;
-        }
-        .braille-content {
+        #emailList {
             margin-top: 20px;
         }
-        .braille-char {
-            display: inline-block;
-            margin-right: 5px;
+        .email-item {
+            padding: 10px;
             margin-bottom: 10px;
+            white-space: pre-wrap; /* Allows for line breaks */
+        }
+        hr {
+            border: 0;
+            height: 1px;
+            background: #ddd;
+            margin: 10px 0;
+        }
+        .braille-container img {
+            height: 20px;
+            margin: 2px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Braille Email Composer</h1>
+        <h1>Email Composer</h1>
         <div class="tabs">
             <div class="tab active" id="composeTab" onclick="showTab('compose')">Compose Email</div>
-            <div class="tab" id="historyTab" onclick="showTab('history')">Email History</div>
+            <div class="tab" id="secondTab" onclick="showTab('second')">Email List</div>
         </div>
         <div id="compose" class="tab-content active">
             <h2>Compose Email</h2>
             <div class="input-container">
                 <input type="text" id="emailRecipient" placeholder="Recipient's Email Address">
-                <textarea id="emailSubject" rows="1" placeholder="Subject"></textarea>
-                <textarea id="emailBody" rows="10" placeholder="Compose your email in Braille..."></textarea>
+                <input type="text" id="emailSubject" placeholder="Subject">
+                <textarea id="emailBody" rows="10" placeholder="Compose your email here..."></textarea>
                 <button type="button" onclick="sendEmail()">Send Email</button>
             </div>
             <div id="sendResult">
@@ -100,15 +111,14 @@
                 <p id="sendOutput"></p>
             </div>
         </div>
-        <div id="history" class="tab-content">
-            <h2>Email History</h2>
-            <div id="historyContent">
-                <p>No email history available.</p>
-            </div>
-            <div id="brailleContent" class="braille-content">
+        <div id="second" class="tab-content">
+            <h2>Email List</h2>
+            <div id="emailList">
+                <!-- List of emails and Braille content will be displayed here -->
             </div>
         </div>
     </div>
+
     <script>
         function showTab(tabId) {
             document.querySelectorAll('.tab').forEach(tab => {
@@ -119,9 +129,83 @@
             });
             document.querySelector(`#${tabId}Tab`).classList.add('active');
             document.getElementById(tabId).classList.add('active');
-            if (tabId === 'history') {
-                fetchEmailHistory();
+
+            if (tabId === 'second') {
+                loadEmailList();
             }
+        }
+
+        async function loadEmailList() {
+            try {
+                const response = await fetch('/api/list_emails');
+                const result = await response.json();
+                const emailListDiv = document.getElementById('emailList');
+                emailListDiv.innerHTML = '';
+
+                if (result.status === 'success' && result.emails.length > 0) {
+                    result.emails.forEach((email, index) => {
+                        const [recipient, subject, body] = email.split('|');
+
+                        const emailItem = document.createElement('div');
+                        emailItem.className = 'email-item';
+
+                        const recipientElem = document.createElement('p');
+                        recipientElem.textContent = `Recipient: ${recipient}`;
+
+                        const subjectElem = document.createElement('p');
+                        subjectElem.textContent = `Subject: ${subject}`;
+
+                        const bodyElem = document.createElement('div');
+                        bodyElem.className = 'body-content';
+                        bodyElem.textContent = body;
+
+                        emailItem.appendChild(recipientElem);
+                        emailItem.appendChild(subjectElem);
+                        emailItem.appendChild(bodyElem);
+
+                        // Add a click event to show the body as Braille
+                        emailItem.addEventListener('click', () => {
+                            displayBrailleBody(body, bodyElem);
+                        });
+
+                        emailListDiv.appendChild(emailItem);
+
+                        const hr = document.createElement('hr');
+                        emailListDiv.appendChild(hr);
+                    });
+                } else {
+                    emailListDiv.innerText = 'No emails available.';
+                }
+            } catch (error) {
+                document.getElementById('emailList').innerText = `Error: ${error.message}`;
+            }
+        }
+
+        function displayBrailleBody(body, bodyElem) {
+            const brailleContainer = document.createElement('div');
+            brailleContainer.className = 'braille-container';
+            
+            bodyElem.innerHTML = '';  // Clear current text content
+
+            body.toLowerCase().split('').forEach(char => {
+                let brailleImage;
+                if (char >= 'a' && char <= 'z') {
+                    brailleImage = `/static/braille_char/${char}.png`;
+                } else if (char === ' ') {
+                    brailleImage = `/static/braille_char/space.png`;
+                } else {
+                    brailleImage = `/static/braille_char/space.png`;
+                }
+
+                const imgElem = document.createElement('img');
+                imgElem.src = brailleImage;
+                imgElem.alt = char;
+                imgElem.style.margin = "2px";  // Adjust spacing between Braille images
+
+                brailleContainer.appendChild(imgElem);
+            });
+
+            bodyElem.appendChild(brailleContainer);
         }
 
         async function sendEmail() {
@@ -130,17 +214,21 @@
             const body = document.getElementById('emailBody').value;
 
             try {
-                const response = await fetch('/api/send_email', {
+                const response = await fetch('/api/send_braille_email', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ recipient: recipient, subject: subject, body: body })
+                    body: JSON.stringify({ 
+                        recipient: recipient, 
+                        subject: subject, 
+                        braille_text: body 
+                    })
                 });
 
                 const result = await response.json();
                 if (result.status === 'success') {
-                    document.getElementById('sendOutput').innerText = `Email sent successfully.`;
+                    document.getElementById('sendOutput').innerText = 'Email sent successfully.';
                 } else {
                     document.getElementById('sendOutput').innerText = `Error: ${result.error}`;
                 }
@@ -148,50 +236,6 @@
                 document.getElementById('sendOutput').innerText = `Error: ${error.message}`;
             }
         }
-
-        async function fetchEmailHistory() {
-            try {
-                const response = await fetch('/api/email_history');
-                const result = await response.json();
-                if (result.status === 'success') {
-                    const historyContent = document.getElementById('historyContent');
-                    historyContent.innerHTML = '';
-                    result.emails.forEach((email, index) => {
-                        const emailItem = document.createElement('div');
-                        emailItem.classList.add('email-item');
-                        emailItem.dataset.emailIndex = index;
-                        emailItem.innerHTML = `<p>Recipient: ${email[0]}</p><p class="email-subject">Subject: ${email[1]}</p><p class="email-body">Content: ${email[2]}</p>`;
-                        emailItem.onclick = () => displayBrailleContent(email[2]);
-                        historyContent.appendChild(emailItem);
-                    });
-                }
-            } catch (error) {
-                document.getElementById('historyContent').innerText = `Error: ${error.message}`;
-            }
-        }
-
-        function displayBrailleContent(content) {
-            const brailleContentDiv = document.getElementById('brailleContent');
-            brailleContentDiv.innerHTML = '';
-            for (let char of content.toLowerCase()) {
-                if (char.match(/[a-z]/)) {
-                    const img = document.createElement('img');
-                    img.src = `/static/braille_char/${char}.png`;
-                    img.alt = char;
-                    img.classList.add('braille-char');
-                    brailleContentDiv.appendChild(img);
-                } else if (char === ' ') {
-                    const space = document.createElement('div');
-                    space.classList.add('braille-char');
-                    space.style.width = '20px';
-                    brailleContentDiv.appendChild(space);
-                }
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            showTab('compose');
-        });
     </script>
 </body>
 </html>
