@@ -2,33 +2,31 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
-import pandas as pd
 from PIL import Image
 from torchvision import transforms
-from torch.nn.utils.rnn import pad_sequence
 import os
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import FunctionTransformer
+import logging
 
 class BrailleDataset(Dataset):
-    def __init__(self, csv_file, img_dir, transform=None):
-        self.labels = pd.read_csv(csv_file)
-        self.img_dir = img_dir
+    def __init__(self, img_paths, transform=None):
+        self.img_paths = img_paths
         self.transform = transform
         self.classes = {char: idx for idx, char in enumerate("abcdefghijklmnopqrstuvwxyz ")}
         self.num_classes = len(self.classes)
 
     def __len__(self):
-        return len(self.labels)
+        return len(self.img_paths)
 
     def __getitem__(self, idx):
-        img_name = os.path.join(self.img_dir, self.labels.iloc[idx, 1].split("/")[-1])
+        img_name = self.img_paths[idx]
         image = Image.open(img_name).convert('RGB')
-        label = self.labels.iloc[idx, 0]
-        label = torch.tensor([self.classes[char] for char in label], dtype=torch.long)  # Convert label to tensor
-        
+
         if self.transform:
             image = self.transform(image)
         
-        return image, label
+        return image
 
 # Transforms for image preprocessing
 transform = transforms.Compose([
@@ -38,10 +36,9 @@ transform = transforms.Compose([
 ])
 
 def collate_fn(batch):
-    images, labels = zip(*batch)
+    images = [item for item in batch]
     images = torch.stack(images, 0)
-    labels = pad_sequence(labels, batch_first=True, padding_value=-1)  # Use -1 as padding value
-    return images, labels
+    return images
 
 class BrailleCNN(nn.Module):
     def __init__(self, num_classes, max_label_length):
@@ -107,3 +104,48 @@ def process_image(filename, new_filename, braille_image_folder):
         new_image.save(new_filename)
     else:
         image.save(new_filename)
+
+# Function to transform DataLoader into batches of (image, label)
+def load_data(data_loader):
+    images = next(iter(data_loader))
+    return images
+
+# Function to transform model predictions into text
+def predict_text(model, images):
+    device = next(model.parameters()).device  # Get the device of the model
+    images = images.to(device)  # Move the images to the same device as the model
+    
+    with torch.no_grad():
+        outputs = model(images)
+        _, predicted = torch.max(outputs, 2)
+    
+    return predicted
+
+# Function to decode predictions
+def decode_text(predictions, num_classes):
+    decoded = []
+    for pred in predictions:
+        text = ''.join([chr(p + 97) if p != -1 else '' for p in pred])
+        text = text.replace('{', '').replace('}', '')  # Removing unwanted braces
+        text = text.strip()  # Trim any leading or trailing spaces
+        decoded.append(text)
+    return decoded
+
+# Function to fit and predict using BrailleCNN
+def fit_predict(model, data_loader):
+    logging.info("Starting the prediction process in the pipeline.")
+    images = load_data(data_loader)
+    predictions = predict_text(model, images)
+    decoded_predictions = decode_text(predictions, model.num_classes)
+    logging.info("Prediction process in the pipeline completed.")
+    return decoded_predictions
+
+# Define the pipeline
+def create_pipeline(model):
+    logging.info("Initializing the pipeline.")
+    pipeline = Pipeline([
+        ('data_loader', FunctionTransformer(load_data, validate=False)),
+        ('model_predict', FunctionTransformer(lambda x: fit_predict(model, x), validate=False))
+    ])
+    logging.info("Pipeline initialized.")
+    return pipeline

@@ -1,0 +1,43 @@
+# gitleaks configuration for app.py
+
+title = "Gitleaks Configuration for app.py"
+
+[[rules]]
+description = "Environment Variable LOG_FILE_PATH"
+regex = '''(?i)log_file_path\s*=\s*['"][^'"]+['"]'''
+tags = ["env", "log", "file"]
+
+[[rules]]
+description = "Environment Variable MODEL_PATH"
+regex = '''(?i)model_path\s*=\s*['"][^'"]+['"]'''
+tags = ["env", "model", "path"]
+
+[[rules]]
+description = "Environment Variable BRAILLE_IMAGE_FOLDER"
+regex = '''(?i)braille_image_folder\s*=\s*['"][^'"]+['"]'''
+tags = ["env", "braille", "folder"]
+
+[[rules]]
+description = "Environment Variable UPLOADS_FOLDER"
+regex = '''(?i)uploads_folder\s*=\s*['"][^'"]+['"]'''
+tags = ["env", "uploads", "folder"]
+
+[[rules]]
+description = "Environment Variable NUM_CLASSES"
+regex = '''(?i)num_classes\s*=\s*\d+'''
+tags = ["env", "num_classes"]
+
+[[rules]]
+description = "Environment Variable MAX_LABEL_LENGTH"
+regex = '''(?i)max_label_length\s*=\s*\d+'''
+tags = ["env", "max_label_length"]
+
+[[rules]]
+description = "Environment Variable DEVICE"
+regex = '''(?i)device\s*=\s*['"]?(cpu|cuda)['"]?'''
+tags = ["env", "device"]
+
+[[rules]]
+description = "Environment Variable PORT"
+regex = '''(?i)port\s*=\s*\d+'''
+tags = ["env", "port"]

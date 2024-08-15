@@ -41,3 +41,11 @@ $ cd app
 $ pip3 install -r requrements.txt
 $ python3 ./app.py
 ```
+
+## Run Braille Email Composer [Work in progress]
+NOTE: This is under development and might not work as intended
+```sh
+$ cd app
+$ pip3 install -r requrements.txt
+$ python3 ./braille_email_app.py
+```
